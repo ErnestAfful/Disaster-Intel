@@ -15,6 +15,7 @@ import logging
 from pipeline.config import DATA_DIR
 from pipeline.fetch_eonet import fetch_eonet_events
 from pipeline.clean_events import clean_events
+from pipeline.database import init_db, upsert_events 
 from analysis.visualizations import (
     create_density_map,
     create_frequency_chart,
@@ -26,6 +27,14 @@ from analysis.visualizations import (
 logger = logging.getLogger(__name__)
 
 
+def persist_events(df):
+    """Initialize the database and upsert cleaned events into it."""
+    init_db()
+    inserted, updated = upsert_events(df)
+    logger.info(f"Database: {inserted} inserted, {updated} updated")
+    return inserted, updated
+
+
 def main(days=None, start="2020-01-01", end="2026-03-31", show_charts=True):
     """
     Run the full pipeline: fetch → clean → save → visualize.
@@ -33,7 +42,7 @@ def main(days=None, start="2020-01-01", end="2026-03-31", show_charts=True):
     This replaces NASAProject.py entirely.
     """
 
-    # ── Step 1: Fetch ─────────────────────────────────────────
+    # ── Step 1: Fetch 
     logger.info("=" * 60)
     logger.info("STARTING PIPELINE RUN")
     logger.info("=" * 60)
@@ -47,14 +56,17 @@ def main(days=None, start="2020-01-01", end="2026-03-31", show_charts=True):
         logger.error("No data returned from EONET. Stopping.")
         return
 
-    # ── Step 2: Clean ─────────────────────────────────────────
+    # ── Step 2: Clean 
     df = clean_events(df_raw)
 
     if df.empty:
         logger.error("No events survived cleaning. Stopping.")
         return
 
-    # ── Step 3: Save ──────────────────────────────────────────
+    # ── Step 3: Persist to database ─
+    persist_events(df)
+
+    # ── Step 4: Save ─
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
     raw_path = DATA_DIR / "eonet_events_raw.csv"
@@ -65,7 +77,7 @@ def main(days=None, start="2020-01-01", end="2026-03-31", show_charts=True):
     logger.info(f"Raw data saved to {raw_path}")
     logger.info(f"Clean data saved to {clean_path}")
 
-    # ── Step 4: Visualize (optional) ──────────────────────────
+    # ── Step 5: Visualize 
     if not show_charts:
         logger.info("Skipping charts (--no-charts flag)")
         return

@@ -40,7 +40,7 @@ def extract_geometry(df):
     df["longitude"] = df["geometry"].apply(
         lambda x: x[-1]["coordinates"][0] if x and len(x) > 0 else None
     )
-    df["date"] = df["geometry"].apply(
+    df["event_date"] = df["geometry"].apply(
         lambda x: x[-1]["date"] if x and len(x) > 0 else None
     )
     df["event_type"] = df["categories"].apply(
@@ -97,7 +97,7 @@ def clean_events(df):
         logger.info(f"Removed {before - after} duplicate events")
 
     # Step 4 — drop rows missing critical fields
-    required = ["latitude", "longitude", "date", "event_type"]
+    required = ["latitude", "longitude", "event_date", "event_type"]
     before = len(df)
     df = df.dropna(subset=required)
     after = len(df)
@@ -105,7 +105,7 @@ def clean_events(df):
         logger.warning(f"Dropped {before - after} events with missing critical fields")
 
     # Step 5 — parse dates
-    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df["event_date"] = pd.to_datetime(df["event_date"], errors="coerce")
 
     # Step 6 — derive status column (used in Q5 of your analysis)
     if "closed" in df.columns:
