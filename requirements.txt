@@ -1,0 +1,8 @@
+requests
+requests-cache
+pandas
+plotly
+python-dotenv
+sqlalchemy
+geopy
+reverse_geocoder

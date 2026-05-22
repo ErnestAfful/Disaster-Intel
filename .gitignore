@@ -1,0 +1,26 @@
+# Environment and secrets
+.env
+
+# Database and data files
+data/*.db
+data/*.csv
+!data/.gitkeep
+
+# Logs
+logs/*.log
+!logs/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
