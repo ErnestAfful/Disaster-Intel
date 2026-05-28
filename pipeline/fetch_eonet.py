@@ -25,7 +25,7 @@ def fetch_eonet_events(
 
     Two modes:
         - Incremental:  pass days=1  (for hourly pipeline runs)
-        - Historical:   pass start="2020-01-01", end="2026-03-31"  (for backfill)
+        - Historical:   pass start="2025-01-01", end="2026-04-30"  (for backfill)
 
     Args:
         days:    Number of days to look back (use this OR start/end, not both)

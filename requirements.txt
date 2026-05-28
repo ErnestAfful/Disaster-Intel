@@ -1,8 +1,11 @@
 requests
 requests-cache
 pandas
+numpy
 plotly
 python-dotenv
 sqlalchemy
 geopy
 reverse_geocoder
+streamlit
+watchdog 

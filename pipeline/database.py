@@ -55,11 +55,17 @@ CREATE TABLE IF NOT EXISTS air_quality (
 """
 def init_db():
 
-    logger.info("Initialize the database tables") 
-    with engine.begin() as conn: 
+    logger.info("Initialize the database tables")
+    with engine.begin() as conn:
         conn.execute(text(EVENTS_TABLE))
         conn.execute(text(WEATHER_TABLE))
         conn.execute(text(AQI_TABLE))
+        # Migration: add risk_score if it doesn't exist yet
+        try:
+            conn.execute(text("ALTER TABLE events ADD COLUMN risk_score REAL"))
+            logger.info("Migration: added risk_score column to events table.")
+        except Exception:
+            pass  # Column already exists — safe to ignore
     logger.info("Database tables is ready.")   
 
 #functions
@@ -126,42 +132,45 @@ def upsert_events(df):
     logger.info(f"Upsert complete — {inserted} inserted, {updated} updated")
     return inserted, updated
 
-def get_existing_event_ids():
-    #Return a set of existing event ids from the database. 
+def get_existing_event_ids(): 
     with engine.connect() as conn: 
         result = conn.execute(text("SELECT id FROM events"))
         return {row[0] for row in result} 
 
 def get_events_without_weather():
-    #Return a list of events that do not have weather data yet. 
     query = """
             SELECT e.id, e.latitude, e.longitude, e.event_date, e.event_type
             FROM events e
             LEFT JOIN weather w ON e.id = w.event_id
             WHERE w.event_id IS NULL
+            ORDER BY e.event_date ASC
             """
     with engine.connect() as conn:
         df = pd.read_sql_query(text(query), conn)
     logger.info(f"Found {len(df)} events without weather data.")
     return df 
 
-def get_events_without_aqi():
-    #Return a list of events that do not have AQI data yet. 
-    query = """
+def get_events_without_aqi(north_america_only=False):
+    bbox_filter = ""
+    if north_america_only:
+        bbox_filter = """
+            AND e.latitude  BETWEEN 15.0 AND 72.0
+            AND e.longitude BETWEEN -168.0 AND -52.0
+        """
+    query = f"""
             SELECT e.id, e.latitude, e.longitude, e.event_date, e.event_type
             FROM events e
             LEFT JOIN air_quality a ON e.id = a.event_id
             WHERE a.event_id IS NULL
+            {bbox_filter}
             """
     with engine.connect() as conn:
         df = pd.read_sql_query(text(query), conn)
-    logger.info(f"Found {len(df)} events without AQI data.")
+    region = "North America" if north_america_only else "global"
+    logger.info(f"Found {len(df)} events without AQI data ({region}).")
     return df
 
-def save_weather(event_id, weather_data):
-    #Save weather data for a specific event. 
-    #event_id: the id of the event
-    #weather_data: dict with keys matching weather table columns 
+def save_weather(event_id, weather_data): 
     with engine.begin() as conn: 
         conn.execute(
             text("DELETE FROM weather WHERE event_id = :event_id"), {"event_id": event_id}
@@ -176,9 +185,6 @@ def save_weather(event_id, weather_data):
             {"event_id": event_id, **weather_data},
         )
 def save_aqi(event_id, aqi_data):
-    #Save AQI data for a specific event.
-    #event_id: the id of the event
-    #aqi_data: dict with keys matching air_quality table columns
     with engine.begin() as conn:
         conn.execute(
             text("DELETE FROM air_quality WHERE event_id = :event_id"),
@@ -193,6 +199,35 @@ def save_aqi(event_id, aqi_data):
             """),
             {"event_id": event_id, **aqi_data},
         ) 
+def get_events_without_risk_score():
+    """Return events that haven't been scored yet."""
+    query = """
+        SELECT e.id, e.event_type, e.latitude, e.longitude, e.event_date,
+               w.temperature_max, w.windspeed_max, w.precipitation,
+               a.pm25, a.station_name
+        FROM events e
+        LEFT JOIN weather w ON e.id = w.event_id
+        LEFT JOIN air_quality a ON e.id = a.event_id
+        WHERE e.risk_score IS NULL
+    """
+    with engine.connect() as conn:
+        df = pd.read_sql_query(text(query), conn)
+    logger.info(f"Found {len(df)} events without risk scores.")
+    return df
+
+def save_risk_scores(scores: dict):
+    """
+    Bulk-save risk scores.
+    scores: {event_id: score_float}
+    """
+    with engine.begin() as conn:
+        for event_id, score in scores.items():
+            conn.execute(
+                text("UPDATE events SET risk_score = :score WHERE id = :id"),
+                {"score": score, "id": event_id},
+            )
+    logger.info(f"Saved {len(scores)} risk scores.")
+
 def get_all_events():
     #Return a DataFrame of all events in the database. 
     with engine.connect() as conn:
@@ -201,9 +236,12 @@ def get_all_events():
 def enriched_events(): 
     #the master query
     query = """
-            SELECT 
-                e.*, 
-                w.temperature_max, 
+            SELECT
+                e.id, e.title, e.event_type, e.event_date,
+                e.latitude, e.longitude, e.status, e.closed,
+                e.geometry_count, e.link, e.created_at, e.updated_at,
+                e.risk_score,
+                w.temperature_max,
                 w.temperature_min,
                 w.precipitation,
                 w.windspeed_max,
@@ -222,4 +260,3 @@ def enriched_events():
         df = pd.read_sql_query(text(query), conn)
     logger.info(f"Retrieved {len(df)} enriched events.")
     return df
-

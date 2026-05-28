@@ -1,10 +1,11 @@
 # Environment and secrets
 .env
 
-# Database and data files
-data/*.db
+# Data files — exclude cache and raw exports, keep the DB for static deployment
+data/http_cache.sqlite
 data/*.csv
 !data/.gitkeep
+# disaster_intel.db is intentionally committed (static data snapshot for deployment)
 
 # Logs
 logs/*.log

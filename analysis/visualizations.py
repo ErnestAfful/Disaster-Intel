@@ -11,6 +11,7 @@ All functions expect a CLEANED DataFrame (output of clean_events).
 import logging
 import plotly.express as px
 import pandas as pd
+from analysis.theme import apply_theme, themed_colors
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +37,9 @@ def create_density_map(df):
         zoom=2,
         mapbox_style="open-street-map",
         title="Global Distribution of NASA EONET Events",
+        color_continuous_scale="YlOrRd",
     )
-
+    apply_theme(fig)
     return fig
 
 
@@ -55,7 +57,7 @@ def create_frequency_chart(df):
     logger.info("Creating event frequency chart...")
 
     df = df.copy()
-    df["month"] = df["date"].dt.to_period("M").astype(str)
+    df["month"] = df["event_date"].dt.tz_localize(None).dt.to_period("M").astype(str) if df["event_date"].dt.tz is not None else df["event_date"].dt.to_period("M").astype(str)
 
     monthly_counts = (
         df.groupby(["month", "event_type"])["id"]
@@ -70,8 +72,10 @@ def create_frequency_chart(df):
         color="event_type",
         title="Frequency of Event Types Over Time",
         labels={"event_count": "Number of Events", "month": "Month"},
+        color_discrete_sequence=themed_colors(),
     )
-
+    fig.update_traces(line=dict(width=2.5))
+    apply_theme(fig)
     return fig
 
 
@@ -84,7 +88,7 @@ def create_monthly_activity_chart(df):
     logger.info("Creating monthly activity chart...")
 
     df = df.copy()
-    df["month"] = df["date"].dt.to_period("M").astype(str)
+    df["month"] = df["event_date"].dt.tz_localize(None).dt.to_period("M").astype(str) if df["event_date"].dt.tz is not None else df["event_date"].dt.to_period("M").astype(str)
 
     monthly_counts = (
         df.groupby(["month", "event_type"])["id"]
@@ -100,8 +104,9 @@ def create_monthly_activity_chart(df):
         title="Monthly Event Activity",
         barmode="group",
         labels={"event_count": "Number of Events", "month": "Month"},
+        color_discrete_sequence=themed_colors(),
     )
-
+    apply_theme(fig)
     return fig
 
 
@@ -141,6 +146,8 @@ def create_wildfire_regional_analysis(df):
         title="Top 15 Countries by Wildfire Event Count",
         labels={"x": "Country Code", "y": "Number of Wildfire Events"},
     )
+    fig_country.update_traces(marker_color="#E63946")
+    apply_theme(fig_country)
 
     # US-specific view — top 15 states
     df_us = df_wildfires[df_wildfires["country"] == "US"]
@@ -153,6 +160,8 @@ def create_wildfire_regional_analysis(df):
         title="Top 15 US States by Wildfire Event Count",
         labels={"x": "State", "y": "Number of Wildfire Events"},
     )
+    fig_state.update_traces(marker_color="#FF6D00")
+    apply_theme(fig_state)
 
     return fig_country, fig_state
 
@@ -185,6 +194,7 @@ def create_status_chart(df):
         title="Active vs Closed Events by Type",
         barmode="group",
         labels={"event_count": "Number of Events", "event_type": "Event Type"},
+        color_discrete_map={"open": "#E63946", "closed": "#2196F3"},
     )
-
+    apply_theme(fig)
     return fig
