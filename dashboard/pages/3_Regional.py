@@ -13,7 +13,7 @@ from dashboard.data import load_data, apply_filters
 from dashboard.sidebar import render_sidebar
 from analysis.visualizations import create_wildfire_regional_analysis
 
-st.set_page_config(page_title="Regional — disaster-intel", layout="wide")
+st.set_page_config(page_title="Regional — disaster-intel", layout="wide", initial_sidebar_state="collapsed")
 
 df_full = load_data()
 event_types, date_range, statuses = render_sidebar(df_full)

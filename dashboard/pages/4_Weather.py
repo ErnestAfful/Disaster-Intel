@@ -15,7 +15,7 @@ from dashboard.data import load_data, apply_filters
 from dashboard.sidebar import render_sidebar
 from analysis.phase2_charts import weather_conditions_by_type, weather_signatures
 
-st.set_page_config(page_title="Weather — disaster-intel", layout="wide")
+st.set_page_config(page_title="Weather — disaster-intel", layout="wide", initial_sidebar_state="collapsed")
 
 df_full = load_data()
 event_types, date_range, statuses = render_sidebar(df_full)

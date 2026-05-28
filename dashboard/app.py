@@ -22,7 +22,7 @@ st.set_page_config(
     page_title="disaster-intel",
     page_icon="🌍",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 # ── Data ──────────────────────────────────────────────────────────────────────
@@ -37,7 +37,25 @@ df = apply_filters(df_full, event_types, date_range, statuses)
 
 # ── Header ────────────────────────────────────────────────────────────────────
 st.title("🌍 disaster-intel")
-st.caption("NASA EONET natural disaster events enriched with weather and air quality data.")
+st.markdown(
+    "#### 7,000+ natural disasters. 17 months. One dashboard."
+)
+st.caption(
+    "Real-time intelligence pipeline built on NASA EONET — every event enriched "
+    "with weather conditions, air quality data, composite risk scores, and "
+    "3-month trend forecasts."
+)
+
+st.info(
+    "**About this project** · disaster-intel automatically ingests natural disaster "
+    "events from NASA's Earth Observatory Natural Event Tracker (EONET), enriches "
+    "each event with Open-Meteo weather data and OpenAQ air quality readings, scores "
+    "composite risk (0–100), and forecasts future event frequency. "
+    "Use the sidebar (☰) to filter by event type, date range, or status. "
+    "Navigate pages using the left sidebar menu.",
+    icon="ℹ️",
+)
+
 st.divider()
 
 # ── KPI strip ─────────────────────────────────────────────────────────────────
@@ -56,18 +74,29 @@ if df.empty:
 
 # ── Q1: Global density map ─────────────────────────────────────────────────
 st.subheader("Q1 — Where do natural disasters cluster most densely?")
-fig_density = create_density_map(df)
+with st.spinner("Rendering global density map…"):
+    fig_density = create_density_map(df)
 st.plotly_chart(fig_density, use_container_width=True)
 
 # ── Q2: Frequency over time ────────────────────────────────────────────────
 st.subheader("Q2 — Is the frequency of event types increasing over time?")
-fig_freq = create_frequency_chart(df)
+with st.spinner("Building frequency chart…"):
+    fig_freq = create_frequency_chart(df)
 st.plotly_chart(fig_freq, use_container_width=True)
 
 # ── Q5: Active vs closed ──────────────────────────────────────────────────
 st.subheader("Q5 — How many events are active vs closed?")
-fig_status = create_status_chart(df)
+with st.spinner("Computing status breakdown…"):
+    fig_status = create_status_chart(df)
 if fig_status:
     st.plotly_chart(fig_status, use_container_width=True)
 else:
     st.info("Status data not available.")
+
+st.divider()
+st.caption(
+    "Data sources: [NASA EONET v3](https://eonet.gsfc.nasa.gov) · "
+    "[Open-Meteo Archive](https://open-meteo.com) · "
+    "[OpenAQ v3](https://openaq.org) · "
+    "Built with Streamlit & Plotly"
+)

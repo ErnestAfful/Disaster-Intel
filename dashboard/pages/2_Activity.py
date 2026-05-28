@@ -16,7 +16,7 @@ from dashboard.sidebar import render_sidebar
 from analysis.visualizations import create_monthly_activity_chart
 from analysis.phase2_charts import seasonal_climate_trends
 
-st.set_page_config(page_title="Activity — disaster-intel", layout="wide")
+st.set_page_config(page_title="Activity — disaster-intel", layout="wide", initial_sidebar_state="collapsed")
 
 df_full = load_data()
 event_types, date_range, statuses = render_sidebar(df_full)

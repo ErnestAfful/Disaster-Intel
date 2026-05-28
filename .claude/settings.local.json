@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs cat -n)",
+      "Bash(python main.py --days 3 --no-charts)",
+      "Bash(python main.py --no-charts)",
+      "Bash(venv/bin/python main.py --no-charts)",
+      "Bash(python main.py)",
+      "Bash(pip show *)",
+      "Bash(pip install *)",
+      "Bash(uv venv *)",
+      "Bash(uv pip *)"
+    ]
+  }
+}
